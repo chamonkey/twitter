@@ -279,7 +279,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def direct_message_destroy(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         object_from_response(Twitter::DirectMessage, :post, "/1.1/direct_messages/destroy.json", options.merge(:id => id))
       end
     end
@@ -356,7 +356,7 @@ module Twitter
       if args.empty?
         direct_messages_received(options)
       else
-        args.flatten.threaded_map do |id|
+        args.flatten.pmap do |id|
           direct_message(id, options)
         end
       end
@@ -536,7 +536,7 @@ module Twitter
       # Twitter always turns on notifications if the "follow" option is present, even if it's set to false
       # so only send follow if it's true
       options[:follow] = true if !!options.delete(:follow)
-      args.flatten.threaded_map do |user|
+      args.flatten.pmap do |user|
         begin
           options.merge_user!(user)
           object_from_response(Twitter::User, :post, "/1.1/friendships/create.json", options)
@@ -1298,7 +1298,7 @@ module Twitter
       if args.empty?
         collection_from_response(Twitter::SavedSearch, :get, "/1.1/saved_searches/list.json", options)
       else
-        args.flatten.threaded_map do |id|
+        args.flatten.pmap do |id|
           object_from_response(Twitter::SavedSearch, :get, "/1.1/saved_searches/show/#{id}.json", options)
         end
       end
@@ -1351,7 +1351,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def saved_search_destroy(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         object_from_response(Twitter::SavedSearch, :post, "/1.1/saved_searches/destroy/#{id}.json", options)
       end
     end
@@ -1444,7 +1444,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def favorite(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         begin
           object_from_response(Twitter::Tweet, :post, "/1.1/favorites/create.json", options.merge(:id => id))
         rescue Twitter::Error::Forbidden => error
@@ -1473,7 +1473,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def favorite!(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         begin
           object_from_response(Twitter::Tweet, :post, "/1.1/favorites/create.json", options.merge(:id => id))
         rescue Twitter::Error::Forbidden => error
@@ -1505,7 +1505,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def unfavorite(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         object_from_response(Twitter::Tweet, :post, "/1.1/favorites/destroy.json", options.merge(:id => id))
       end
     end
@@ -1805,7 +1805,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def statuses_activity(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         status_activity(id, options)
       end
     end
@@ -1855,7 +1855,7 @@ module Twitter
     #   @option options [String] :lang Language code for the rendered embed. This will affect the text and localization of the rendered HTML.
     def oembeds(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         object_from_response(Twitter::OEmbed, :get, "/1.1/statuses/oembed.json?id=#{id}", options)
       end
     end
@@ -1898,7 +1898,7 @@ module Twitter
     #   @option options [Boolean, String, Integer] :trim_user Each tweet returned in a timeline will include a user object with only the author's numerical ID when set to true, 't' or 1.
     def retweet(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         begin
           response = post("/1.1/statuses/retweet/#{id}.json", options)
           retweeted_status = response.dup
@@ -1929,7 +1929,7 @@ module Twitter
     #   @option options [Boolean, String, Integer] :trim_user Each tweet returned in a timeline will include a user object with only the author's numerical ID when set to true, 't' or 1.
     def retweet!(*args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         begin
           response = post("/1.1/statuses/retweet/#{id}.json", options)
           retweeted_status = response.dup
@@ -2195,7 +2195,7 @@ module Twitter
     #   @param options [Hash] A customizable set of options.
     def users(*args)
       options = args.extract_options!
-      args.flatten.each_slice(MAX_USERS_PER_REQUEST).threaded_map do |users|
+      args.flatten.each_slice(MAX_USERS_PER_REQUEST).pmap do |users|
         collection_from_response(Twitter::User, :post, "/1.1/users/lookup.json", options.merge_users(users))
       end.flatten
     end
@@ -2493,7 +2493,7 @@ module Twitter
     # @return [Array<Twitter::Tweet>]
     def threaded_tweets_from_response(request_method, url, args)
       options = args.extract_options!
-      args.flatten.threaded_map do |id|
+      args.flatten.pmap do |id|
         object_from_response(Twitter::Tweet, request_method, url + "/#{id}.json", options)
       end
     end
@@ -2504,7 +2504,7 @@ module Twitter
     # @return [Array<Twitter::User>]
     def threaded_users_from_response(request_method, url, args)
       options = args.extract_options!
-      args.flatten.threaded_map do |user|
+      args.flatten.pmap do |user|
         object_from_response(Twitter::User, request_method, url, options.merge_user(user))
       end
     end
@@ -2541,7 +2541,7 @@ module Twitter
       members = args.pop
       options.merge_list!(args.pop)
       options.merge_owner!(args.pop || screen_name) unless options[:owner_id] || options[:owner_screen_name]
-      members.flatten.each_slice(MAX_USERS_PER_REQUEST).threaded_map do |users|
+      members.flatten.each_slice(MAX_USERS_PER_REQUEST).pmap do |users|
         object_from_response(Twitter::List, request_method, url, options.merge_users(users))
       end.last
     end
